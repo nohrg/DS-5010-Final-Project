@@ -6,8 +6,6 @@ Driver
 
 # pre-existing python libraries
 from dash import Dash, html, dcc, callback, Output, Input
-import webbrowser
-
 
 # our custom-made libraries
 from aft_pkg.aft_data_org import (CODES, YEARS, PROGRAM_LIST, 
@@ -21,7 +19,7 @@ app = Dash(__name__)
 
 app.layout = html.Div(
     [
-        html.H2(f"After School Program Enrollment Visualizations", 
+        html.H2(f"Afternoon Program Enrollment Visualizations", 
                 style={"textAlign": "center", "fontWeight": "bold"}),
         html.Br(),
         
@@ -234,11 +232,12 @@ def update_comparison_charts(programs, years, groupby,
 # Correlation Heatmap callback
 @app.callback(
     Output('correlation-heatmap', 'figure'),
+    Input("years-slider", "value"),
     [Input('correlation-heatmap', 'hoverData')]
 )
-def update_heatmap(hoverData):
+def update_heatmap(years, hoverData):
     '''program correlation heatmap'''
-    heatmap = generate_dash_heatmap()
+    heatmap = generate_dash_heatmap(years=years)
     return heatmap
 
 

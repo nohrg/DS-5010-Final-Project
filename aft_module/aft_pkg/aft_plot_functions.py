@@ -110,18 +110,15 @@ def concatenate_program_details(row):
     return ' '.join(details)
 
 
-def filter_top_progs(df, start_yr=2010, end_yr=2022, start_gr=9, end_gr=12,
-                     n=15):
+def filter_top_progs(df: pd.DataFrame, years:list[int], 
+                     start_gr:int=9, end_gr:int=12, n:int=15):
     '''
     Function-- filter_top_progs
         filters the dataframe to only include the most popular programs
     
     Parameters:
         df (pd.Dataframe) : afternoon program dataframe to be filtered
-        start_yr (int) : begin filtering df starting in this year (inclusive).
-        Default is 2010
-        end_yr (int) : stop filtering df in this year (inclusive). Default
-        is 2022
+        years (list[int]): 
         start_gr (int) : start grade (inclusive).  Default is 9th grade.
         end_gr (int) : end grade (inclusive).  Default is 12th grade
         n (int) : Filter by top n most enrolled programs.  Default is top 10
@@ -136,8 +133,8 @@ def filter_top_progs(df, start_yr=2010, end_yr=2022, start_gr=9, end_gr=12,
     df['Full name'] = df.apply(concatenate_program_details, axis=1)
 
     # apply filters
-    aps_top = df[(df['Acad Yr (start)'] >= start_yr)
-                 & (df['Acad Yr (start)'] <= end_yr)
+    aps_top = df[(df['Acad Yr (start)'] >= min(years))
+                 & (df['Acad Yr (start)'] <= max(years))
                  & (df['Grade at Time of Activity'] >= start_gr)
                  & (df['Grade at Time of Activity'] <= end_gr)]
 
@@ -278,7 +275,7 @@ def generate_heatmap_df(aps_top, cramers_v_results):
 
     # Replace any NaN values with 0 (for pairs without direct comparison,
     # if any)
-    heatmap_df = heatmap_df.fillna(0)
+    heatmap_df = heatmap_df.fillna(0) ## FIX THIS
 
     # Ensure the data is of float type for heatmap compatibility
     heatmap_df = heatmap_df.astype(float).round(4)
@@ -427,8 +424,16 @@ def treemap(years:range, program_codes:list[str],
     return fig
 
 
-def generate_dash_heatmap():
-    aps_top = filter_top_progs(DATA, n=12)
+def generate_dash_heatmap(years: list[int]):
+    """
+    Function-- generate_dash_heatmap
+        _summary_
+    Parameters:
+        years (list[int]): _description_
+    Returns:
+        go.Figure: _description_
+    """
+    aps_top = filter_top_progs(DATA, years=years, n=12)
     matrix = mark_enrollments(aps_top)
     cramers_v_results = generate_cramers_results(matrix)
     heatmap_df = generate_heatmap_df(aps_top, cramers_v_results)
