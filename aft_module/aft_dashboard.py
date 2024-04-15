@@ -141,7 +141,8 @@ app.layout = html.Div(
                     )
                 ], label="Enrollment Comparison Over Time"),
                 
-                # correlation heatmap
+                # Correlation Heatmap
+                ## heatmap showing correlation of 12 most popular programs
                 dcc.Tab([
                     html.Div("Displays correlation heatmap of the top 12 "
                              "most popular activities as measured by their "
@@ -152,7 +153,8 @@ app.layout = html.Div(
 
                 ], label="Program Correlation"),
 
-                # program popularity treemap
+                # Program Popularity Treemap
+                ## Displays program popularity across demographics
                 dcc.Tab([
                     html.Div("Displays the 10 most popular programs among "+
                              "selected demographics"),
@@ -228,13 +230,13 @@ def update_comparison_charts(programs, years, groupby,
         grades=grades)
 
 
-# Heatmap callback
+# Correlation Heatmap callback
 @app.callback(
     Output('correlation-heatmap', 'figure'),
     [Input('correlation-heatmap', 'hoverData')]
 )
-
 def update_heatmap(hoverData):
+    '''program correlation heatmap'''
     heatmap = generate_dash_heatmap()
     return heatmap
 

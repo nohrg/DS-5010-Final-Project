@@ -24,10 +24,12 @@ def filter_dataframe(*, df:pd.DataFrame,
     """
     Function-- filter_dataframe
         returns a filtered dataframe with the correct values
+        
     Parameters:
         df (pd.DataFrame): dataframe to filter
         column_name (str): name of the column to search through
         filters (list): list of values to search for
+        
     Returns:
         pd.DataFrame: the filtered dataframe
     """
@@ -39,9 +41,11 @@ def pivot_dataframe(*, df: pd.DataFrame,
     """
     Function-- pivot_dataframe
         outputs a pivot table, use with treemap()
+        
     Parameters:
         df (pd.DataFrame)
         index (list[str]): column indicies to use
+        
     Returns:
         pd.DataFrame
     """
@@ -61,11 +65,13 @@ def melt_pivottable(df: pd.DataFrame, id_variables: list[str],
     Function-- melt_pivottable
         turns a Pandas 2-level pivot table into a one-dimensional pivot table,
         use with treemap()
+        
     Parameters:
         df (pd.DataFrame): dataframe to melt
         id_variables (list[str]): main column indices used in the pivot table
         var_name (str): column to group counts by
         value_name (str): column with counts for each row
+        
     Returns:
         pd.DataFrame
     """
@@ -76,18 +82,22 @@ def melt_pivottable(df: pd.DataFrame, id_variables: list[str],
 
 def concatenate_program_details(row):
     '''
-    Function to concatenate important program details into a single string
-    This function is used to add a 'Full Name' column to the aps data frame.
+    Function-- concatenate_program_details
+        Concatenates important program details into a single string
+        This function is used to add a 'Full Name' column to the aps data frame
 
-    Args:
-        row (pd.Series) : A Pandas Series corresponding to a single row of a DataFrame.
-            It should contain the columns 'Program (Gender)', 'Program (Level)',
-            and 'Program (name)', from which non-NaN values will be concatenated.
+    Parameters:
+        row (pd.Series): Pandas Series corresponding to a single row of 
+        a DataFrame
+            It should contain the columns: 
+                'Program (Gender)', 'Program (Level)', and 'Program (name)',
+            from which non-NaN values will be concatenated
 
     Returns:
-        str : A string formed by concatenating the non-NaN values of 'Program (Gender)',
-            'Program (Level)', and 'Program (name)' columns, separated by spaces.
-            Returns an empty string if all specified columns contain NaN values.
+        str: A string formed by concatenating the non-NaN values of
+        'Program (Gender)', 'Program (Level)', and 'Program (name)' columns,
+        separated by spaces.
+            Returns an empty string if all specified columns contain NaN values
     '''
     # List to hold the non-NaN values
     details = []
@@ -103,7 +113,10 @@ def concatenate_program_details(row):
 def filter_top_progs(df, start_yr=2010, end_yr=2022, start_gr=9, end_gr=12,
                      n=15):
     '''
-    Args:
+    Function-- filter_top_progs
+        filters the dataframe to only include the most popular programs
+    
+    Parameters:
         df (pd.Dataframe) : afternoon program dataframe to be filtered
         start_yr (int) : begin filtering df starting in this year (inclusive).
         Default is 2010
@@ -140,11 +153,16 @@ def filter_top_progs(df, start_yr=2010, end_yr=2022, start_gr=9, end_gr=12,
 
 def mark_enrollments(aps_top):
     '''
-    Data wrangling function that generates an enrollments matrix.
-    Creates a df so that each row in a unique Person ID
-    and the columns are the top_enrolled_progs
-
-    1 = enrolled, 0 = not enrolled
+    Function-- mark_enrollments
+        Data wrangling function that generates an enrollments matrix.
+        Creates a df so that each row is a unique Person ID
+        and the columns are the top_enrolled_progs
+    
+    Parameters:
+        aps_top (pd.DataFrame): pre-filtered dataframe
+    Returns:
+        matrix (pd.DataFrame):
+            1 = enrolled, 0 = not enrolled
     '''
     # create array of all unique students from aps_top
     person_ID_array = aps_top['Person ID'].unique()
@@ -173,7 +191,12 @@ def mark_enrollments(aps_top):
 # helper functions to run Cramer's V test and create a correlation matrix
 def cramers_v(x, y):
     '''
-    Calculate Cramer's V statistic for any two pairwise columns of a DataFrame.
+    Function-- cramers_v
+        Calculate Cramer's V statistic for any two pairwise columns of 
+        a DataFrame.
+    
+    Returns:
+        correlation between pairwise columns
     '''
     confusion_matrix = pd.crosstab(x, y)
     chi2 = chi2_contingency(confusion_matrix)[0]
@@ -189,13 +212,15 @@ def cramers_v(x, y):
 
 def generate_cramers_results(matrix):
     '''
-    Given an enrollment matrix, this function will calculate all pairwise
-    Cramer's V test for any two columns of the input DataFrame.
+    Function-- generate_cramers_results
+        Given an enrollment matrix, this function will calculate all pairwise
+        Cramer's V test for any two columns of the input DataFrame.
 
-    Args:
-        matrix (pd.Dataframe) - enrollment matrix each row is a unique person
-        ID, columns are the different top programs to compare. and '1's to
-        mark all of their enrollments while at the school
+    Parameters:
+        matrix (pd.Dataframe) - enrollment matrix
+            each row is a unique person ID
+            columns are the different top programs to compare
+            and '1's to mark all of their enrollments while at the school
     Returns:
         cramers_v_results (dict) : dictionary of all pairwise programs and
         their Cramer's V coefficients
@@ -222,7 +247,11 @@ def generate_cramers_results(matrix):
 
 def generate_heatmap_df(aps_top, cramers_v_results):
     '''
-    Args:
+    Function-- generate_heatmap_df
+        Turns enrollment dataframe and Cramers results dictionary into a 
+        dataframe for use in heatmap generation
+    
+    Parameters:
         aps_top (pd.Dataframe) : filtered afternoon program dataframe (return
         from filter_top_progs function)
         cramers_v_results (dict) : dictionary of all pairwise cramer's V tests
@@ -230,13 +259,14 @@ def generate_heatmap_df(aps_top, cramers_v_results):
 
     Returns:
         heatmap_df (pd.Dataframe) : n x n matrix where each cell is the
-         Cramer's V coeffiecient between two progs
+        Cramer's V coeffiecient between two progs
     '''
     # extract all program names (to populate row and column variables)
     top_enrolled_progs = aps_top['Full name'].unique()
 
     # Initialize the DataFrame
-    heatmap_df = pd.DataFrame(index=top_enrolled_progs, columns=top_enrolled_progs)
+    heatmap_df = pd.DataFrame(index=top_enrolled_progs, 
+                              columns=top_enrolled_progs)
 
     # Fill the diagonal with 1s for perfect self-correlation
     np.fill_diagonal(heatmap_df.values, 1)
@@ -317,7 +347,7 @@ def program_comparison_bar(programs:list[str],
         years (list[str]): selected years
         demographics (str): color filter for the histograms
         groupmode (str): stacked or grouped bar charts
-        groupby (str): demographic to organize charts by (default is by program)
+        groupby (str): demographic to organize charts by (default: by program)
     Returns:
         go.Figure: plotly figure split by the selected groupby mode
     """
