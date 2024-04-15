@@ -5,8 +5,6 @@ Driver
 '''-------------------------- Imports & Constants --------------------------'''
 
 # pre-existing python libraries
-import numpy as np
-import dash
 from dash import Dash, html, dcc, callback, Output, Input
 import webbrowser
 
@@ -145,11 +143,15 @@ app.layout = html.Div(
                 
                 # correlation heatmap
                 dcc.Tab([
-                    html.Div("Displays correlation heatmap"), ## what tab does
-                    dcc.Graph(id="correlation-heatmap")
-                    ## other components here
+                    html.Div("Displays correlation heatmap of the top 12 "
+                             "most popular activities as measured by their "
+                             "Cramer's V coefficient."),
+
+                    dcc.Graph(id="correlation-heatmap",
+                              style= {'height': '600px', 'width': '800px'})
+
                 ], label="Program Correlation"),
-                
+
                 # program popularity treemap
                 dcc.Tab([
                     html.Div("Displays the 10 most popular programs among "+
@@ -157,7 +159,7 @@ app.layout = html.Div(
                     html.Div("Click into a square to expand it"),
                     dcc.Graph(id="top-ten-table"),
                     html.Br(),
-                    
+
                     ## includes only selected program codes
                     ## (i.e. sports or arts)
                     dcc.Checklist(
@@ -167,9 +169,9 @@ app.layout = html.Div(
                         id="top-ten-program-codes"
                     ),
                     html.Br(),
-                    
+
                     ## demographics filters for backend pivot table
-                    html.Div("Select 2 demographics options"+ 
+                    html.Div("Select 2 demographics options"+
                              "(figure will not update unless exactly 2"+
                              " are selected):"),
                     dcc.Checklist(
@@ -193,13 +195,13 @@ app.layout = html.Div(
     Input("total-program-enroll-grouping", "value"), # groupmode
     Input("total-program-enroll-grades", "value")
 )
-def update_total_program_enrollment(programs, years, demographics, 
+def update_total_program_enrollment(programs, years, demographics,
                                     groupmode, grades):
     '''total program enrollment chart'''
     return total_program_enrollment_bar(
-        programs=programs, 
-        years=years, 
-        demographics=demographics, 
+        programs=programs,
+        years=years,
+        demographics=demographics,
         groupmode=groupmode,
         grades=grades)
 
@@ -214,7 +216,7 @@ def update_total_program_enrollment(programs, years, demographics,
     Input("comparison-enroll-grouping", "value"), # groupmode
     Input("comparison-enroll-grades", "value")
 )
-def update_comparison_charts(programs, years, groupby, 
+def update_comparison_charts(programs, years, groupby,
                              demographics, groupmode, grades):
     '''program comparison charts'''
     return program_comparison_bar(
@@ -226,14 +228,25 @@ def update_comparison_charts(programs, years, groupby,
         grades=grades)
 
 
+# Heatmap callback
+@app.callback(
+    Output('correlation-heatmap', 'figure'),
+    [Input('correlation-heatmap', 'hoverData')]
+)
+
+def update_heatmap(hoverData):
+    heatmap = generate_dash_heatmap()
+    return heatmap
+
+
 # checklist disabling callback (for popularity treemap)
 @app.callback(
     Output("top-ten-id-variables", "options"),
     Input("top-ten-id-variables", "value")
 )
 def update_multi_options(value):
-    '''The treemap popularity table only works when 2 demographics are 
-    selected. This callback prevents the user from selecting more than 2 
+    '''The treemap popularity table only works when 2 demographics are
+    selected. This callback prevents the user from selecting more than 2
     options at a time.'''
     options = TREEMAP_DEMOGS
     if len(value) >= 2:
@@ -257,11 +270,12 @@ def update_multi_options(value):
     )
 def update_treemap(years, codes, id_demogs):
     '''program popularity treemap'''
-    return treemap(years=years, program_codes=codes, 
+    return treemap(years=years, program_codes=codes,
                    id_variables=id_demogs)
+
 
 '''----------------------------------- Main --------------------------------'''
 
 if __name__ == "__main__":
-    app.run_server(host = "0.0.0.0", debug=True)
+    app.run_server(host="0.0.0.0", debug=True)
     webbrowser.open_new("http://http://localhost:8050/")
