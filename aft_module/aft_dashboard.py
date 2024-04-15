@@ -91,7 +91,8 @@ app.layout = html.Div(
                 dcc.Tab([
                     html.Div("Compares enrollment in selected programs "+
                              " across demographics factors"),
-                    dcc.Graph(id="comparison-enroll-charts"),
+                    dcc.Graph(id="comparison-enroll-charts", 
+                              style= {'height': '900px'}),
                     
                     ## program selection, random by default
                     html.Div("Select programs:"),
@@ -279,5 +280,6 @@ def update_treemap(years, codes, id_demogs):
 '''----------------------------------- Main --------------------------------'''
 
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", debug=True)
-    webbrowser.open_new("http://http://localhost:8050/")
+    
+    app.run_server(debug=True)
+    

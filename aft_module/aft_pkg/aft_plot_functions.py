@@ -378,8 +378,7 @@ def program_comparison_bar(programs:list[str],
         },
         facet_col=groupby,
         facet_col_wrap=2,
-        barmode=groupmode,
-        height = 900
+        barmode=groupmode
     )\
         .update_traces(bingroup=None)\
         .update_layout(bargap=0.05, bargroupgap=0.1)\
