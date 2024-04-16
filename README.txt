@@ -11,7 +11,7 @@ Columns:
   - Person ID: unique ID numbers for each student
   - Gender code: M, F, N
   - Race/ethnicity: self-reported. A value of 0 indicates that no race/ethnicity data was provided by the student
-  - FA: student's financial aid status
+  - FA: student's financial aid status. A value of 0 indicates no financial aid, a value of 1 indicates some financial aid, and a value of 2 indicates 90%+ financial aid.
   - Acad Yr (start): academic year that the record is for
   - Code: bucket category for the program the student is enrolled in (e.g. "S" for "sports", "A" for "arts")
   - Program (name): name of the program the student is enrolled in
