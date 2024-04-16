@@ -6,7 +6,7 @@ An interactive data visualization dashboard designed to enable stakeholders at a
 
 
 Data format:
-A CSV file, each row is an individual student's record from a single season.
+A CSV file, each row is an individual student's record from a single season. Students will have multiple rows across seasons and years at the school.
 Columns:
   - Person ID: unique ID numbers for each student
   - Gender code: M, F, N
