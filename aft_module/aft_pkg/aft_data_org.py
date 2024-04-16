@@ -10,7 +10,8 @@ import pandas as pd
 '''--------------------------------- Data ----------------------------------'''
 
 # all data
-DATA = pd.read_csv("aft_v3.csv")
+enrollment_data = "aft_v3.csv" # file name
+DATA = pd.read_csv(enrollment_data)
 
 # program codes (i.e., "sports", "arts")
 codes_unique = list(DATA.sort_values("Code")["Code"].unique())
