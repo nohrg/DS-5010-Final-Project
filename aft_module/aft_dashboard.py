@@ -144,11 +144,23 @@ app.layout = html.Div(
                 ## heatmap showing correlation of 12 most popular programs
                 dcc.Tab([
                     html.Div("Displays correlation heatmap of the top 12 "
-                             "most popular activities as measured by their "
+                             "most popular activities in the selected program"
+                             " codes and years, as measured by their "
                              "Cramer's V coefficient."),
 
                     dcc.Graph(id="correlation-heatmap",
                               style= {'height': '600px', 'width': '800px'}),
+                    html.Br(),
+                    
+                    ## includes only selected program codes
+                    ## (i.e. sports or arts)
+                    html.Div("Program codes:"),
+                    dcc.Checklist(
+                        options:=CODES, # walrus assignment for use in value
+                        value=[option for option in options],
+                        inline=True,
+                        id="correlation-heatmap-program-codes"
+                    ),
                     html.Br(),
                     
                     ## middle school, high school, or whole school
@@ -173,6 +185,7 @@ app.layout = html.Div(
 
                     ## includes only selected program codes
                     ## (i.e. sports or arts)
+                    html.Div("Program codes:"),
                     dcc.Checklist(
                         options:=CODES, # walrus assignment for use in value
                         value=[option for option in options],
@@ -242,12 +255,16 @@ def update_comparison_charts(programs, years, groupby,
 @app.callback(
     Output('correlation-heatmap', 'figure'),
     Input("years-slider", "value"),
+    Input("correlation-heatmap-program-codes", "value"),
     Input("correlation-heatmap-grades", "value"),
     [Input('correlation-heatmap', 'hoverData')]
 )
-def update_heatmap(years, grades, hoverData):
+def update_heatmap(years, program_codes, grades, hoverData):
     '''program correlation heatmap'''
-    heatmap = generate_dash_heatmap(years=years, grades=grades)
+    heatmap = generate_dash_heatmap(
+        years=years,
+        program_codes=program_codes,
+        grades=grades)
     return heatmap
 
 

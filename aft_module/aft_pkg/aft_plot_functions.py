@@ -18,7 +18,7 @@ from .aft_data_org import DATA
 '''----------------------------- Data Functions ----------------------------'''
 # dataframe manipulations
 
-def grade_level(grades:str="all"):
+def grade_level(grades:str="all") -> list[int]:
     """
     Function-- grade_level
         takes a string and returns a list of numbers for the grade level
@@ -36,12 +36,16 @@ def grade_level(grades:str="all"):
         grade_level = [7,8,9,10,11,12]
     return grade_level
 
-def filter_dataframe(*, df:pd.DataFrame,
-                     column_name:str,
-                     filters:list) -> pd.DataFrame:
+
+def filter_dataframe(*, # requires kwargs to have kwarg name in calls
+    df:pd.DataFrame,
+    column_name:str,
+    filters:list
+    ) -> pd.DataFrame:
     """
     Function-- filter_dataframe
-        returns a filtered dataframe with the correct values
+        returns a filtered dataframe with the only the selected values in
+        the column
         
     Parameters:
         df (pd.DataFrame): dataframe to filter
@@ -54,11 +58,13 @@ def filter_dataframe(*, df:pd.DataFrame,
     return df[df[column_name].isin(filters)]
 
 
-def pivot_dataframe(*, df: pd.DataFrame,
-                    index:list[str]):
+def pivot_dataframe(*, # requires kwargs to have kwarg name in calls
+    df: pd.DataFrame,
+    index:list[str]
+    ) -> pd.DataFrame:
     """
     Function-- pivot_dataframe
-        outputs a pivot table, use with treemap()
+        outputs a partially-flattened pivot table, use with treemap()
         
     Parameters:
         df (pd.DataFrame)
@@ -78,8 +84,12 @@ def pivot_dataframe(*, df: pd.DataFrame,
     return pivot
 
 
-def melt_pivottable(df: pd.DataFrame, id_variables: list[str],
-                    var_name: str, value_name: str) -> pd.DataFrame:
+def melt_pivottable(
+    df: pd.DataFrame,
+    id_variables: list[str],
+    var_name: str,
+    value_name: str
+    ) -> pd.DataFrame:
     """
     Function-- melt_pivottable
         turns a Pandas pivot table into a one-dimensional dataframe,
@@ -94,12 +104,16 @@ def melt_pivottable(df: pd.DataFrame, id_variables: list[str],
     Returns:
         pd.DataFrame
     """
-    melted = pd.melt(df, id_vars=list(id_variables), var_name=var_name,
-                     value_name=value_name)
+    melted = pd.melt(
+        df,
+        id_vars=list(id_variables),
+        var_name=var_name,
+        value_name=value_name
+        )
     return melted
 
 
-def concatenate_program_details(row):
+def concatenate_program_details(row: pd.Series) -> str:
     '''
     Function-- concatenate_program_details
         Concatenates important program details into a single string
@@ -129,8 +143,13 @@ def concatenate_program_details(row):
     return ' '.join(details)
 
 
-def filter_top_progs(df: pd.DataFrame, years:list[int], 
-                     grades:str="hs", n:int=15):
+def filter_top_progs(
+    df: pd.DataFrame, 
+    years:list[int], 
+    program_codes: list[str],
+    grades:str="hs", 
+    n:int=15
+    )-> pd.DataFrame:
     '''
     Function-- filter_top_progs
         filters the dataframe to only include the most popular programs
@@ -147,14 +166,16 @@ def filter_top_progs(df: pd.DataFrame, years:list[int],
         aps_top (pd.Dataframe): a dataframe filtered using the above parameters
         with the top n programs
     '''
-
     # add a column at end of df of program 'Full name'
     df['Full name'] = df.apply(concatenate_program_details, axis=1)
 
     # apply filters
     aps_top = filter_dataframe(
         df=filter_dataframe(
-            df=df,
+            df=filter_dataframe(
+                df=df,
+                column_name="Code",
+                filters=program_codes),
             column_name="Acad Yr (start)",
             filters=[i for i in range(min(years), max(years)+1)]
         ),
@@ -166,13 +187,17 @@ def filter_top_progs(df: pd.DataFrame, years:list[int],
     top_enrolled_progs = aps_top['Full name'].value_counts().head(n).index
 
     # Filter the DataFrame to only keep top_enrolled_programs
-    aps_top = aps_top[aps_top['Full name'].isin(top_enrolled_progs)]
+    aps_top = filter_dataframe(
+        df=aps_top, 
+        column_name="Full name", 
+        filters=top_enrolled_progs
+        )
 
     return aps_top
 
-# helper function to help convert aps_top df into an enrollment matrix
 
-def mark_enrollments(aps_top: pd.DataFrame):
+# helper function to help convert aps_top df into an enrollment matrix
+def mark_enrollments(aps_top: pd.DataFrame) -> pd.DataFrame:
     '''
     Function-- mark_enrollments
         Data wrangling function that generates an enrollments matrix.
@@ -210,14 +235,17 @@ def mark_enrollments(aps_top: pd.DataFrame):
 
 
 # helper functions to run Cramer's V test and create a correlation matrix
-def cramers_v(x, y):
+def cramers_v(x: pd.Series, y: pd.Series) -> float:
     '''
     Function-- cramers_v
         Calculate Cramer's V statistic for any two pairwise columns of 
         a DataFrame.
     
+    Parameters:
+        x,y (pd.Series): columns of a matrix where all values are 0 or 1
+    
     Returns:
-        correlation between pairwise columns
+        float: correlation between pairwise columns
     '''
     confusion_matrix = pd.crosstab(x, y)
     chi2 = chi2_contingency(confusion_matrix)[0]
@@ -231,7 +259,7 @@ def cramers_v(x, y):
     return (phi2_corr / min((k_corr - 1), (r_corr - 1))) ** 0.5
 
 
-def generate_cramers_results(matrix:pd.DataFrame):
+def generate_cramers_results(matrix:pd.DataFrame) -> dict:
     '''
     Function-- generate_cramers_results
         Given an enrollment matrix, this function will calculate all pairwise
@@ -266,7 +294,10 @@ def generate_cramers_results(matrix:pd.DataFrame):
     return cramers_v_results
 
 
-def generate_heatmap_df(aps_top: pd.DataFrame, cramers_v_results:dict):
+def generate_heatmap_df(
+    aps_top: pd.DataFrame,
+    cramers_v_results:dict
+    ) -> pd.DataFrame:
     '''
     Function-- generate_heatmap_df
         Turns enrollment dataframe and Cramers results dictionary into a 
@@ -445,7 +476,10 @@ def treemap(
     return fig
 
 
-def generate_dash_heatmap(years: list[int], grades:str="hs"):
+def generate_dash_heatmap(
+    years: list[int], 
+    program_codes: list[str], 
+    grades:str="hs"):
     """
     Function-- generate_dash_heatmap
         _summary_
@@ -454,10 +488,17 @@ def generate_dash_heatmap(years: list[int], grades:str="hs"):
     Returns:
         go.Figure: _description_
     """
-    aps_top = filter_top_progs(DATA, years=years, grades=grades, n=12)
+    aps_top = filter_top_progs(
+        DATA,
+        years=years, 
+        program_codes=program_codes,
+        grades=grades, 
+        n=12)
+    
     matrix = mark_enrollments(aps_top)
     cramers_v_results = generate_cramers_results(matrix)
     heatmap_df = generate_heatmap_df(aps_top, cramers_v_results)
+    
     fig = px.imshow(heatmap_df,
                     labels=dict(color="Correlation"),
                     x=heatmap_df.columns,
@@ -478,7 +519,6 @@ def generate_dash_heatmap(years: list[int], grades:str="hs"):
                 showarrow=False,
                 font=dict(color='white')
             ))
-
     fig.update_layout(annotations=annotations)
 
     # Make axis titles bold
