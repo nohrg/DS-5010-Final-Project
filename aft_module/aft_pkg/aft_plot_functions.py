@@ -18,6 +18,24 @@ from .aft_data_org import DATA
 '''----------------------------- Data Functions ----------------------------'''
 # dataframe manipulations
 
+def grade_level(grades:str="all"):
+    """
+    Function-- grade_level
+        takes a string and returns a list of numbers for the grade level
+    Parameters:
+        grades (str, optional): options are hs, ms, or all. Defaults to "all".
+    Returns:
+        list[int]: list of integers with selected years
+    Yields:
+    """
+    if grades == "hs":
+        grade_level = [9, 10, 11, 12]
+    elif grades=="ms":
+        grade_level = [7, 8]
+    else:
+        grade_level = [7,8,9,10,11,12]
+    return grade_level
+
 def filter_dataframe(*, df:pd.DataFrame,
                      column_name:str,
                      filters:list) -> pd.DataFrame:
@@ -55,7 +73,8 @@ def pivot_dataframe(*, df: pd.DataFrame,
         values="Person ID",
         aggfunc="count",
         fill_value=0
-    ).reset_index(level =[0,1])
+    ).reset_index(level =[i for i in range(len(list(index)))])
+    # reset index helps flatten the pivot table for melt_pivottable()
     return pivot
 
 
@@ -63,7 +82,7 @@ def melt_pivottable(df: pd.DataFrame, id_variables: list[str],
                     var_name: str, value_name: str) -> pd.DataFrame:
     """
     Function-- melt_pivottable
-        turns a Pandas 2-level pivot table into a one-dimensional pivot table,
+        turns a Pandas pivot table into a one-dimensional dataframe,
         use with treemap()
         
     Parameters:
@@ -111,7 +130,7 @@ def concatenate_program_details(row):
 
 
 def filter_top_progs(df: pd.DataFrame, years:list[int], 
-                     start_gr:int=9, end_gr:int=12, n:int=15):
+                     grades:str="hs", n:int=15):
     '''
     Function-- filter_top_progs
         filters the dataframe to only include the most popular programs
@@ -133,10 +152,15 @@ def filter_top_progs(df: pd.DataFrame, years:list[int],
     df['Full name'] = df.apply(concatenate_program_details, axis=1)
 
     # apply filters
-    aps_top = df[(df['Acad Yr (start)'] >= min(years))
-                 & (df['Acad Yr (start)'] <= max(years))
-                 & (df['Grade at Time of Activity'] >= start_gr)
-                 & (df['Grade at Time of Activity'] <= end_gr)]
+    aps_top = filter_dataframe(
+        df=filter_dataframe(
+            df=df,
+            column_name="Acad Yr (start)",
+            filters=[i for i in range(min(years), max(years)+1)]
+        ),
+        column_name='Grade at Time of Activity',
+        filters=grade_level(grades)
+        )
 
     # Create an array of the top enrolled programs
     top_enrolled_progs = aps_top['Full name'].value_counts().head(n).index
@@ -148,7 +172,7 @@ def filter_top_progs(df: pd.DataFrame, years:list[int],
 
 # helper function to help convert aps_top df into an enrollment matrix
 
-def mark_enrollments(aps_top):
+def mark_enrollments(aps_top: pd.DataFrame):
     '''
     Function-- mark_enrollments
         Data wrangling function that generates an enrollments matrix.
@@ -179,7 +203,7 @@ def mark_enrollments(aps_top):
         # Check if the program exists in the matrix columns to avoid KeyError
         if program in matrix.columns:
             # Find the index in matrix where Person_ID matches and set the
-            # program column to 1
+            # cell of the program column to 1
             matrix.loc[matrix['Person ID'] == person_id, program] = 1
 
     return matrix
@@ -207,7 +231,7 @@ def cramers_v(x, y):
     return (phi2_corr / min((k_corr - 1), (r_corr - 1))) ** 0.5
 
 
-def generate_cramers_results(matrix):
+def generate_cramers_results(matrix:pd.DataFrame):
     '''
     Function-- generate_cramers_results
         Given an enrollment matrix, this function will calculate all pairwise
@@ -242,7 +266,7 @@ def generate_cramers_results(matrix):
     return cramers_v_results
 
 
-def generate_heatmap_df(aps_top, cramers_v_results):
+def generate_heatmap_df(aps_top: pd.DataFrame, cramers_v_results:dict):
     '''
     Function-- generate_heatmap_df
         Turns enrollment dataframe and Cramers results dictionary into a 
@@ -285,30 +309,25 @@ def generate_heatmap_df(aps_top, cramers_v_results):
 '''----------------------------- Plot Functions ----------------------------'''
 # plot generation
 
-def total_program_enrollment_bar(programs:list[str],
-                                 years:list[str],
-                                 demographics:str,
-                                 groupmode:str,
-                                 grades:str) -> go.Figure:
+def total_program_enrollment_bar(
+    programs:list[str],
+    years:list[str],
+    demographics:str,
+    groupmode:str,
+    grades:str
+    ) -> go.Figure:
     """
     Function-- total_program_enrollment_bar
         creates a histogram with the selected programs and their combined
-        enrollment in the selected years, organizing by demographics and
-        program codes as needed
+        enrollment in the selected years, organizing by demographics as needed
     Parameters:
-        program_codes (list[str]): selected program codes
         programs (list[str]): selected program names
         years (list[int]): selected years
         demographics (str): color filter for the histogram
-    Returns: plotly figure
+    Returns: go.Figure
     """
-    if grades == "hs":
-        grade_level = [9, 10, 11, 12]
-    elif grades=="ms":
-        grade_level = [7, 8]
-    else:
-        grade_level = [7,8,9,10,11,12]
 
+    # filter original data to include the selected programs + years + grades
     filtered_df = filter_dataframe(df = filter_dataframe(
         df=filter_dataframe(
             df=DATA,
@@ -317,8 +336,9 @@ def total_program_enrollment_bar(programs:list[str],
             ),
         column_name="Acad Yr (start)",
         filters=[i for i in range(min(years), max(years)+1)]
-        ), column_name="Grade at Time of Activity", filters=grade_level)
+        ), column_name="Grade at Time of Activity", filters=grade_level(grades))
 
+    # generates histogram
     fig = px.histogram(
         filtered_df,
         x="Program (name)",
@@ -329,17 +349,18 @@ def total_program_enrollment_bar(programs:list[str],
     return fig
 
 
-def program_comparison_bar(programs:list[str],
-                           years:list[str],
-                           groupby:str,
-                           demographics:str,
-                           groupmode:str,
-                           grades:str) -> go.Figure:
+def program_comparison_bar(
+    programs:list[str],
+    years:list[str],
+    groupby:str,
+    demographics:str,
+    groupmode:str,
+    grades:str
+    ) -> go.Figure:
     """
     Function-- program_comparison_bar
         creates enrollment comparison charts
     Parameters:
-        program_codes (list[str]): selected program codes
         programs (list[str]): selected programs
         years (list[str]): selected years
         demographics (str): color filter for the histograms
@@ -348,22 +369,19 @@ def program_comparison_bar(programs:list[str],
     Returns:
         go.Figure: plotly figure split by the selected groupby mode
     """
-    if grades == "hs":
-        grade_level = [9, 10, 11, 12]
-    elif grades=="ms":
-        grade_level = [7, 8]
-    else:
-        grade_level = [7,8,9,10,11,12]
 
-    filtered_df = filter_dataframe(df = filter_dataframe(
-        df=filter_dataframe(
-            df=DATA,
-            column_name="Program (name)",
-            filters=programs
-            ),
-        column_name="Acad Yr (start)",
-        filters=[i for i in range(min(years), max(years)+1)]
-        ), column_name="Grade at Time of Activity", filters=grade_level)\
+    filtered_df = filter_dataframe(
+        df = filter_dataframe(
+            df=filter_dataframe(
+                df=DATA,
+                column_name="Program (name)",
+                filters=programs
+                ),
+            column_name="Acad Yr (start)",
+            filters=[i for i in range(min(years), max(years)+1)]
+            ), 
+        column_name="Grade at Time of Activity", 
+        filters=grade_level(grades))\
             .sort_values(groupby)
 
     fig = px.histogram(
@@ -384,8 +402,11 @@ def program_comparison_bar(programs:list[str],
     return fig
 
 
-def treemap(years:range, program_codes:list[str],
-            id_variables:list[str]):
+def treemap(
+    years:range, 
+    program_codes:list[str],
+    id_variables:list[str]
+    ):
     """
     Function-- treemap
         turns a dataframe into a treemap with the 10 most popular programs
@@ -424,7 +445,7 @@ def treemap(years:range, program_codes:list[str],
     return fig
 
 
-def generate_dash_heatmap(years: list[int]):
+def generate_dash_heatmap(years: list[int], grades:str="hs"):
     """
     Function-- generate_dash_heatmap
         _summary_
@@ -433,7 +454,7 @@ def generate_dash_heatmap(years: list[int]):
     Returns:
         go.Figure: _description_
     """
-    aps_top = filter_top_progs(DATA, years=years, n=12)
+    aps_top = filter_top_progs(DATA, years=years, grades=grades, n=12)
     matrix = mark_enrollments(aps_top)
     cramers_v_results = generate_cramers_results(matrix)
     heatmap_df = generate_heatmap_df(aps_top, cramers_v_results)

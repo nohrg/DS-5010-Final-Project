@@ -148,7 +148,17 @@ app.layout = html.Div(
                              "Cramer's V coefficient."),
 
                     dcc.Graph(id="correlation-heatmap",
-                              style= {'height': '600px', 'width': '800px'})
+                              style= {'height': '600px', 'width': '800px'}),
+                    html.Br(),
+                    
+                    ## middle school, high school, or whole school
+                    html.Div("Grades:"),
+                    dcc.RadioItems(
+                        options=GRADES,
+                        value="hs",
+                        inline=True,
+                        id="correlation-heatmap-grades"
+                    ), html.Br()
 
                 ], label="Program Correlation"),
 
@@ -172,9 +182,8 @@ app.layout = html.Div(
                     html.Br(),
 
                     ## demographics filters for backend pivot table
-                    html.Div("Select 2 demographics options"+
-                             "(figure will not update unless exactly 2"+
-                             " are selected):"),
+                    html.Div("Select demographics options"+
+                             " (best results with 3 or fewer selected):"),
                     dcc.Checklist(
                         options = TREEMAP_DEMOGS,
                         value=["Race/ethnicity", "Gender code"],
@@ -233,23 +242,24 @@ def update_comparison_charts(programs, years, groupby,
 @app.callback(
     Output('correlation-heatmap', 'figure'),
     Input("years-slider", "value"),
+    Input("correlation-heatmap-grades", "value"),
     [Input('correlation-heatmap', 'hoverData')]
 )
-def update_heatmap(years, hoverData):
+def update_heatmap(years, grades, hoverData):
     '''program correlation heatmap'''
-    heatmap = generate_dash_heatmap(years=years)
+    heatmap = generate_dash_heatmap(years=years, grades=grades)
     return heatmap
 
 
 # checklist disabling callback (for popularity treemap)
-@app.callback(
+'''@app.callback(
     Output("top-ten-id-variables", "options"),
     Input("top-ten-id-variables", "value")
 )
 def update_multi_options(value):
-    '''The treemap popularity table only works when 2 demographics are
+    #''''''The treemap popularity table only works when 2 demographics are
     selected. This callback prevents the user from selecting more than 2
-    options at a time.'''
+    options at a time.''''''
     options = TREEMAP_DEMOGS
     if len(value) >= 2:
         options = [
@@ -260,7 +270,7 @@ def update_multi_options(value):
             }
             for option in options
         ]
-    return options
+    return options'''
 
 
 # Program Popularity callback
