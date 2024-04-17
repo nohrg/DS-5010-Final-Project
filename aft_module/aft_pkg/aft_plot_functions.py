@@ -15,6 +15,10 @@ import plotly.graph_objects as go
 # our custom-made libraries
 from .aft_data_org import DATA
 
+# Resolves potential errors related to deprecated downcasting methods and
+# automatically adapts to future versions of pandas.
+pd.set_option('future.no_silent_downcasting', True)
+
 '''----------------------------- Data Functions ----------------------------'''
 # dataframe manipulations
 
@@ -175,7 +179,7 @@ def filter_top_progs(df: pd.DataFrame, years:list[int],
 def mark_enrollments(aps_top: pd.DataFrame):
     '''
     Function-- mark_enrollments
-        Data wrangling function that generates an enrollments matrix.
+        Data wrangling function that generates an enrollment matrix.
         Creates a df so that each row is a unique Person ID
         and the columns are the top_enrolled_progs
     
@@ -269,7 +273,7 @@ def generate_cramers_results(matrix:pd.DataFrame):
 def generate_heatmap_df(aps_top: pd.DataFrame, cramers_v_results:dict):
     '''
     Function-- generate_heatmap_df
-        Turns enrollment dataframe and Cramers results dictionary into a 
+        Turns enrollment dataframe and Cramer's V results dictionary into a
         dataframe for use in heatmap generation
     
     Parameters:
@@ -280,7 +284,7 @@ def generate_heatmap_df(aps_top: pd.DataFrame, cramers_v_results:dict):
 
     Returns:
         heatmap_df (pd.Dataframe) : n x n matrix where each cell is the
-        Cramer's V coeffiecient between two progs
+        Cramer's V coefficient between two programs
     '''
     # extract all program names (to populate row and column variables)
     top_enrolled_progs = aps_top['Full name'].unique()
@@ -448,16 +452,19 @@ def treemap(
 def generate_dash_heatmap(years: list[int], grades:str="hs"):
     """
     Function-- generate_dash_heatmap
-        _summary_
+        Converts a Cramer's V correlation matrix of the top 12 most popular
+        after-school programs (within any given years) into a Dash heatmap.
     Parameters:
-        years (list[int]): _description_
+        years (list[int]): List of years to search and filter top programs.
     Returns:
-        go.Figure: _description_
+        go.Figure: A heatmap of the Cramer's V correlation coefficient of
+        the top 12 most popular programs within a range of years.
     """
     aps_top = filter_top_progs(DATA, years=years, grades=grades, n=12)
     matrix = mark_enrollments(aps_top)
     cramers_v_results = generate_cramers_results(matrix)
     heatmap_df = generate_heatmap_df(aps_top, cramers_v_results)
+    # Generate dash heatmap visual
     fig = px.imshow(heatmap_df,
                     labels=dict(color="Correlation"),
                     x=heatmap_df.columns,
@@ -467,6 +474,7 @@ def generate_dash_heatmap(years: list[int], grades:str="hs"):
                     range_color=[0, 0.3]  # Set range of colors
                     )
 
+    # Fills heatmap cells with correlation coefficient
     annotations = []
     for i, row in enumerate(heatmap_df.values):
         for j, value in enumerate(row):
