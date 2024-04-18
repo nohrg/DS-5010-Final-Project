@@ -511,7 +511,7 @@ def generate_dash_heatmap(
                     y=heatmap_df.columns,
                     color_continuous_scale='matter',  # Change color palette
                     color_continuous_midpoint=0.15,
-                    range_color=[0, 0.3]  # Set range of colors
+                    range_color=[0, 0.4]  # Set range of colors
                     )
 
     # Fills heatmap cells with correlation coefficient
