@@ -146,8 +146,8 @@ app.layout = html.Div(
                     html.Div("Displays correlation heatmap of the top 12 "
                              "most popular activities in the selected program"
                              " codes and years, as measured by their "
-                             "Cramer's V coefficient."),
-                    html.Div("(May take a few minutes to load changes.)"),
+                             "Cramer's V coefficient. "
+                             "(May take a few minutes to load changes.)"),
 
                     dcc.Graph(id="correlation-heatmap",
                               style= {'height': '600px', 'width': '800px'}),
