@@ -30,7 +30,6 @@ def grade_level(grades:str="all") -> list[int]:
         grades (str, optional): options are hs, ms, or all. Defaults to "all".
     Returns:
         list[int]: list of integers with selected years
-    Yields:
     """
     if grades == "hs":
         grade_level = [9, 10, 11, 12]
@@ -57,7 +56,7 @@ def filter_dataframe(*, # requires kwargs to have kwarg name in calls
         filters (list): list of values to search for
         
     Returns:
-        pd.DataFrame: the filtered dataframe
+        pd.DataFrame: filtered dataframe
     """
     return df[df[column_name].isin(filters)]
 
@@ -75,7 +74,7 @@ def pivot_dataframe(*, # requires kwargs to have kwarg name in calls
         index (list[str]): column indicies to use
         
     Returns:
-        pd.DataFrame
+        pd.DataFrame: pivoted dataframe
     """
     pivot = df.pivot_table(
         index=list(index),
@@ -84,7 +83,7 @@ def pivot_dataframe(*, # requires kwargs to have kwarg name in calls
         aggfunc="count",
         fill_value=0
     ).reset_index(level =[i for i in range(len(list(index)))])
-    # reset index helps flatten the pivot table for melt_pivottable()
+    # reset index helps organize the pivot table for melt_pivottable()
     return pivot
 
 
@@ -106,7 +105,8 @@ def melt_pivottable(
         value_name (str): column with counts for each row
         
     Returns:
-        pd.DataFrame
+        pd.DataFrame: each row is a count of program enrollment by the selected
+        id varibles
     """
     melted = pd.melt(
         df,
@@ -160,7 +160,7 @@ def filter_top_progs(
     
     Parameters:
         df (pd.Dataframe) : afternoon program dataframe to be filtered
-        years (list[int]): 
+        years (list[int]): selected years range
         start_gr (int) : start grade (inclusive).  Default is 9th grade.
         end_gr (int) : end grade (inclusive).  Default is 12th grade
         n (int) : Filter by top n most enrolled programs.  Default is top 10
@@ -334,7 +334,7 @@ def generate_heatmap_df(
 
     # Replace any NaN values with 0 (for pairs without direct comparison,
     # if any)
-    heatmap_df = heatmap_df.fillna(0) ## FIX THIS
+    heatmap_df = heatmap_df.fillna(0) ## depreciated function, as a warning
 
     # Ensure the data is of float type for heatmap compatibility
     heatmap_df = heatmap_df.astype(float).round(4)
@@ -357,9 +357,10 @@ def total_program_enrollment_bar(
         enrollment in the selected years, organizing by demographics as needed
     Parameters:
         programs (list[str]): selected program names
-        years (list[int]): selected years
+        years (list[int]): selected years range
         demographics (str): color filter for the histogram
-    Returns: go.Figure
+    Returns: 
+        go.Figure: a histogram with bars representing total enrollment
     """
 
     # filter original data to include the selected programs + years + grades
@@ -397,7 +398,7 @@ def program_comparison_bar(
         creates enrollment comparison charts
     Parameters:
         programs (list[str]): selected programs
-        years (list[str]): selected years
+        years (list[str]): selected years range
         demographics (str): color filter for the histograms
         groupmode (str): stacked or grouped bar charts
         groupby (str): demographic to organize charts by (default: by program)
@@ -438,7 +439,7 @@ def program_comparison_bar(
 
 
 def treemap(
-    years:range, 
+    years:list[int], 
     program_codes:list[str],
     id_variables:list[str]
     ):
@@ -447,7 +448,7 @@ def treemap(
         turns a dataframe into a treemap with the 10 most popular programs
         based on the selected demographics and program codes
     Parameters:
-        years (range)
+        years (list[int]): selected years range
         program_codes (list[str]): selected program codes to examine
         id_variables (list[str]): selected demographics, takes 2 variables
     Returns:
