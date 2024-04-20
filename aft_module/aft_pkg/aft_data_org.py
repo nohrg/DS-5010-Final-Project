@@ -18,7 +18,7 @@ codes_unique = list(DATA.sort_values("Code")["Code"].unique())
 # 'A', 'C', 'E', 'IP', 'L', 'O', 'S', 'SA', 'SC', 'TM'
 code_labels = ['Arts (A)', 'Community Service (C)', 'Exempt (E)', 
                'Independent Project (IP)', 'Leave (L)', 'Other (O)',
-               'Sports (S)',  'Semester Abroad (SA)', 
+               'Sports (S)',  'Semester Away (SA)', 
                'Strength & Conditioning (SC)', 'Team Manager (TM)']
 CODES = {codes_unique[i]: code_labels[i] for i in range(len(code_labels))}
 
