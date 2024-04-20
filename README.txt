@@ -32,3 +32,4 @@ Columns:
 Running the Module:
   - Place the enrollment data CSV in the "aft_module" folder and rename the enrollment_data variable in aft_pkg/aft_data_org.py as needed
   - Run the aft_dashboard.py module and launch http://localhost:8050 in your webbrowser
+  - To close, type Ctrl+C in the command line/terminal.
