@@ -225,9 +225,10 @@ def filter_top_progs(
 
 def create_enrollment_dict(aps_top:pd.DataFrame) -> dict:
     '''
-    Creates a dictionary of sets where:
-        key = an aps_top_prog name
-        value = set of all unique Person IDs who enrolled in that program
+    Function-- create_enrollment_dict
+        Creates a dictionary of sets where:
+            key = an aps_top_prog name
+            value = set of all unique Person IDs who enrolled in that program
 
     Parameters:
         aps_top (pd.DataFrame) : data frame of all student enrollment choices
@@ -263,7 +264,8 @@ def create_enrollment_dict(aps_top:pd.DataFrame) -> dict:
 
 def create_contingency_table(program_dict, program_a, program_b):
     '''
-    Create a 2x2 contingency table for enrollments in two programs.
+    Function-- create_contingency_table
+        Create a 2x2 contingency table for enrollments in two programs.
 
     Parameters:
         program_dict (dict) : Dictionary of sets where 
@@ -305,11 +307,11 @@ def create_contingency_table(program_dict, program_a, program_b):
     return contingency_table
 
 
-
 def calculate_cramers_v(contingency_table):
     '''
-    Calculate Cramer's V statistic for 2x2 contingency table
-    containing enrollment #'s between programs A and B.
+    Function-- calculate_cramers_v
+        Calculate Cramer's V statistic for 2x2 contingency table
+        containing enrollment #'s between programs A and B.
 
     Parameters:
         contingency_table (np.array) : 2 x 2 contingency table,
@@ -327,8 +329,9 @@ def calculate_cramers_v(contingency_table):
     # use scipy.stat's chi-squared contingency function
     # Note: even though we only need the chi2 statistic to calculate Cramer's V
     # all return values shown below by tuple assignment (for reader)
-    chi2, pvalue, dof, expected_freq = stats.chi2_contingency(contingency_table, 
-                                                              correction=False)
+    chi2, pvalue, dof, expected_freq = stats.chi2_contingency(
+        contingency_table, correction=False
+        )
     
     # Total sample size
     n = np.sum(contingency_table)  
@@ -345,10 +348,11 @@ def calculate_cramers_v(contingency_table):
 
 def generate_heatmap_df(aps_top, program_dict):
     '''
-    Generate a heatmap dataframe where each cell 
-    is the Cramer's V coefficient between two programs.
-    This function iterates through all combinations of top programs,
-    while efficiently skipping any trivial or symmetric cases.
+    Function-- generate_heatmap_df
+        Generate a heatmap dataframe where each cell 
+        is the Cramer's V coefficient between two programs.
+        This function iterates through all combinations of top programs,
+        while efficiently skipping any trivial or symmetric cases.
 
     Parameters:
         aps_top (pd.DataFrame) : Filtered afternoon program dataframe.
@@ -363,8 +367,10 @@ def generate_heatmap_df(aps_top, program_dict):
     top_enrolled_progs = list(aps_top['Full name'].unique())
     
     # initialize blank heatmap, with program names across rows and columns
-    heatmap_df = pd.DataFrame(index=top_enrolled_progs, 
-                              columns=top_enrolled_progs)
+    heatmap_df = pd.DataFrame(
+        index=top_enrolled_progs, 
+        columns=top_enrolled_progs
+        )
 
     # Fill the diagonal with 1s (ie, perfect self-correlation)
     np.fill_diagonal(heatmap_df.values, 1)
@@ -376,7 +382,11 @@ def generate_heatmap_df(aps_top, program_dict):
         for j in range(i + 1, len(top_enrolled_progs)):
             program1 = top_enrolled_progs[i]
             program2 = top_enrolled_progs[j]
-            cont_table = create_contingency_table(program_dict, program1, program2)
+            cont_table = create_contingency_table(
+                program_dict,
+                program1,
+                program2
+                )
             cramers_v = calculate_cramers_v(cont_table)
             heatmap_df.at[program1, program2] = cramers_v
             
