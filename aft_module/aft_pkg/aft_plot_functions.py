@@ -7,8 +7,7 @@ Plot Functions
 # pre-existing python libraries
 import pandas as pd
 import numpy as np
-from scipy.stats import chi2_contingency
-import itertools
+import scipy.stats as stats
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -199,145 +198,193 @@ def filter_top_progs(
 
     return aps_top
 
+## helper functions to run Cramer's V test to create heatmap df
+'''
+    Sources: Background on Cramer's V test obtained from
+    ChatGPT & https://www.statology.org/cramers-v-in-python/
 
-# helper function to help convert aps_top df into an enrollment matrix
-def mark_enrollments(aps_top: pd.DataFrame) -> pd.DataFrame:
-    '''
-    Function-- mark_enrollments
-        Data wrangling function that generates an enrollment matrix.
-        Creates a df so that each row is a unique Person ID
-        and the columns are the top_enrolled_progs
+    Cramer's V is a measure of the strength of association 
+    between two nominal variables.
+
+    It ranges from 0 to 1 where:
+
+        0 indicates no association between the two variables.
+        1 indicates a strong association between the two variables.
     
+    It is calculated as:
+    
+    Cramer's V = √((X2/n) / min(c-1, r-1))
+
+    where:
+
+        X2: The Chi-square statistic
+        n: Total sample size
+        r: Number of rows
+        c: Number of columns
+'''    
+
+def create_enrollment_dict(aps_top:pd.DataFrame) -> dict:
+    '''
+    Creates a dictionary of sets where:
+        key = an aps_top_prog name
+        value = set of all unique Person IDs who enrolled in that program
+
     Parameters:
-        aps_top (pd.DataFrame): pre-filtered dataframe
-    Returns:
-        matrix (pd.DataFrame):
-            1 = enrolled, 0 = not enrolled
+        aps_top (pd.DataFrame) : data frame of all student enrollment choices
+
+    Return:
+        program_dict (dict) : dictionary of sets
+
+    Note: 
+        Leveraging operation efficiency of most set operators being O(1)
+        to hopefully improve runtime.
     '''
-    # create array of all unique students from aps_top
-    person_ID_array = aps_top['Person ID'].unique()
+    # create an array of all top unique program names (using 'Full Name')
+    aps_top_progs = aps_top['Full name'].unique()
 
-    # initialize a Data Frame with all the Person ID's as first column
-    matrix = pd.DataFrame(person_ID_array, columns=["Person ID"])
+    # initialize blank dict
+    program_dict = {}
 
-    # fill rest of matrix with 0's and column_titles
-    column_titles = aps_top['Full name'].unique()
-    for column in column_titles:
-        matrix[column] = 0
+    # iterate through all aps_top_progs to create sets of all 
+    # unique student IDs in each program
+    for each in aps_top_progs:
+        unique_ID_in_prog = aps_top[aps_top['Full name'] == each]
+        
+        # coercing .unique() from array -> set
+        # which should reduce run time in create_contingency_table()
+        program_dict[each] = set(unique_ID_in_prog['Person ID'].unique())
 
-    for _, row in DATA.iterrows():
-        person_id = row['Person ID']
-        program = row['Full name']
+    # finally, add key-value pair of ALL unique Person ID's from aps_top
+    all_person_IDs = set(aps_top['Person ID'].unique())
+    program_dict['all Person IDs'] = all_person_IDs
 
-        # Check if the program exists in the matrix columns to avoid KeyError
-        if program in matrix.columns:
-            # Find the index in matrix where Person_ID matches and set the
-            # cell of the program column to 1
-            matrix.loc[matrix['Person ID'] == person_id, program] = 1
-
-    return matrix
+    return program_dict
 
 
-# helper functions to run Cramer's V test and create a correlation matrix
-def cramers_v(x: pd.Series, y: pd.Series) -> float:
+def create_contingency_table(program_dict, program_a, program_b):
     '''
-    Function-- cramers_v
-        Calculate Cramer's V statistic for any two pairwise columns of 
-        a DataFrame.
-    
+    Create a 2x2 contingency table for enrollments in two programs.
+
     Parameters:
-        x,y (pd.Series): columns of a matrix where all values are 0 or 1
-    
+        program_dict (dict) : Dictionary of sets where 
+            keys - program names
+            values - sets of Person IDs
+        program_a (str) : Name of Program A.
+        program_b (str) : Name of Program B.
+
     Returns:
-        float: correlation between pairwise columns
+        contingency_table (np.array) : 2 x 2 contingency table,
+            containing Person ID enrollments and overlaps
+            between Program A and B, formatted as follows:
+            _ _ _ _ _ _ _ _ _ _
+            | A & B  | A only  |
+            |- - - - - - - - - |
+            | B only | Neither |
+            | - - - - - - - - -|
+    
+    Note: 
+        Leveraging operation efficiency of most set operators being O(1)
+        to hopefully improve runtime.
+    
     '''
-    confusion_matrix = pd.crosstab(x, y)
-    chi2 = chi2_contingency(confusion_matrix)[0]
-    n = confusion_matrix.sum().sum()
+    set_a = program_dict.get(program_a)
+    set_b = program_dict.get(program_b)
+    
+    # use set operators to create sets for venn diagram
+    both = set_a & set_b
+    only_a = set_a - set_b
+    only_b = set_b - set_a
+    neither = set(program_dict['all Person IDs']) - set_a - set_b
+
+    # return counts of each set in 2x2 numpy array
+    contingency_table = np.array([
+        [len(both), len(only_a)],
+        [len(only_b), len(neither)]
+        ])
+
+    return contingency_table
+
+
+
+def calculate_cramers_v(contingency_table):
+    '''
+    Calculate Cramer's V statistic for 2x2 contingency table
+    containing enrollment #'s between programs A and B.
+
+    Parameters:
+        contingency_table (np.array) : 2 x 2 contingency table,
+            containing Person ID enrollments and overlaps
+            between Program A and B, formatted as follows:
+            _ _ _ _ _ _ _ _ _ _
+            | A & B  | A only  |
+            |- - - - - - - - - |
+            | B only | Neither |
+            | - - - - - - - - -|
+        
+    Returns:
+        cramers_v (float) : Cramer's V coefficient, rounded to 4 decimals
+    '''
+    # use scipy.stat's chi-squared contingency function
+    # Note: even though we only need the chi2 statistic to calculate Cramer's V
+    # all return values shown below by tuple assignment (for reader)
+    chi2, pvalue, dof, expected_freq = stats.chi2_contingency(contingency_table, 
+                                                              correction=False)
+    
+    # Total sample size
+    n = np.sum(contingency_table)  
+    
+    # phi-squared = chi-squared / sample size
     phi2 = chi2 / n
-    r, k = confusion_matrix.shape
-    phi2_corr = max(0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
-    r_corr = r - ((r - 1) ** 2) / (n - 1)
-    k_corr = k - ((k - 1) ** 2) / (n - 1)
-
-    return (phi2_corr / min((k_corr - 1), (r_corr - 1))) ** 0.5
-
-
-def generate_cramers_results(matrix:pd.DataFrame) -> dict:
-    '''
-    Function-- generate_cramers_results
-        Given an enrollment matrix, this function will calculate all pairwise
-        Cramer's V test for any two columns of the input DataFrame.
-
-    Parameters:
-        matrix (pd.Dataframe) - enrollment matrix
-            each row is a unique person ID
-            columns are the different top programs to compare
-            and '1's to mark all of their enrollments while at the school
-    Returns:
-        cramers_v_results (dict) : dictionary of all pairwise programs and
-        their Cramer's V coefficients
-            keys (tuple) - (program1 , program 2)
-            value (float) - Cramer's V coefficient (0 = no association,
-            1 = pure association)
-    '''
-    # Drop the 'Person ID' column to focus on program columns only
-    matrix = matrix.drop("Person ID", axis=1)
-
-    # Generate all unique pairs of programs
-    program_columns = matrix.columns
-    pairs = list(itertools.combinations(program_columns, 2))
-
-    # Calculate Cramer's V for each pair and store the results
-    # could store results in a dictionary
-    cramers_v_results = {}
-    for program1, program2 in pairs:
-        cv = cramers_v(matrix[program1], matrix[program2])
-        cramers_v_results[(program1, program2)] = cv
-
-    return cramers_v_results
-
-
-def generate_heatmap_df(
-    aps_top: pd.DataFrame,
-    cramers_v_results:dict
-    ) -> pd.DataFrame:
-    '''
-    Function-- generate_heatmap_df
-        Turns enrollment dataframe and Cramer's V results dictionary into a
-        dataframe for use in heatmap generation
     
-    Parameters:
-        aps_top (pd.Dataframe) : filtered afternoon program dataframe (return
-        from filter_top_progs function)
-        cramers_v_results (dict) : dictionary of all pairwise cramer's V tests
-        (return from generate_cramers_v function)
+    # Number of rows (r) and columns (k)
+    r, k = contingency_table.shape
+    
+    cramers_v = np.sqrt(phi2 / min(k-1, r-1))
+    return cramers_v.round(4)
 
-    Returns:
-        heatmap_df (pd.Dataframe) : n x n matrix where each cell is the
-        Cramer's V coefficient between two programs
+
+def generate_heatmap_df(aps_top, program_dict):
     '''
-    # extract all program names (to populate row and column variables)
-    top_enrolled_progs = aps_top['Full name'].unique()
+    Generate a heatmap dataframe where each cell 
+    is the Cramer's V coefficient between two programs.
+    This function iterates through all combinations of top programs,
+    while efficiently skipping any trivial or symmetric cases.
 
-    # Initialize the DataFrame
+    Parameters:
+        aps_top (pd.DataFrame) : Filtered afternoon program dataframe.
+        program_dict (dict) : Dictionary of sets where 
+            keys - program names
+            values - sets of Person IDs
+    Returns:
+        heatmap_df (pd.DataFrame) : n x n matrix 
+            where each cell is the Cramer's V coefficient between two programs.
+    '''
+    # get list of all programs from aps_top
+    top_enrolled_progs = list(aps_top['Full name'].unique())
+    
+    # initialize blank heatmap, with program names across rows and columns
     heatmap_df = pd.DataFrame(index=top_enrolled_progs, 
                               columns=top_enrolled_progs)
 
-    # Fill the diagonal with 1s for perfect self-correlation
+    # Fill the diagonal with 1s (ie, perfect self-correlation)
     np.fill_diagonal(heatmap_df.values, 1)
 
-    # Populate the DataFrame with Cramer's V results
-    for (program1, program2), cv_value in cramers_v_results.items():
-        heatmap_df.at[program1, program2] = cv_value
-        heatmap_df.at[program2, program1] = cv_value  # Fill symmetric value
+    # Iterate through each pair of programs only once
+    # start at i = 0 up to i = 12
+    for i in range(len(top_enrolled_progs)):
+        # iterate j starting from j = i + 1 (since i = j is along diagonal)
+        for j in range(i + 1, len(top_enrolled_progs)):
+            program1 = top_enrolled_progs[i]
+            program2 = top_enrolled_progs[j]
+            cont_table = create_contingency_table(program_dict, program1, program2)
+            cramers_v = calculate_cramers_v(cont_table)
+            heatmap_df.at[program1, program2] = cramers_v
+            
+            # Fill symmetric value on opposite side of diagonal
+            heatmap_df.at[program2, program1] = cramers_v 
 
-    # Replace any NaN values with 0 (for pairs without direct comparison,
-    # if any)
-    heatmap_df = heatmap_df.fillna(0) ## depreciated function, as a warning
-
-    # Ensure the data is of float type for heatmap compatibility
-    heatmap_df = heatmap_df.astype(float).round(4)
+    # Replace any NaN values with 0 (for pairs without direct comparison)
+    heatmap_df = heatmap_df.fillna(0).astype(float).round(4)
 
     return heatmap_df
 
@@ -502,9 +549,9 @@ def generate_dash_heatmap(
         grades=grades, 
         n=12)
     
-    matrix = mark_enrollments(aps_top)
-    cramers_v_results = generate_cramers_results(matrix)
-    heatmap_df = generate_heatmap_df(aps_top, cramers_v_results)
+    program_dict = create_enrollment_dict(aps_top)
+    heatmap_df = generate_heatmap_df(aps_top, program_dict)
+    
     # Generate dash heatmap visual
     fig = px.imshow(heatmap_df,
                     labels=dict(color="Correlation"),
