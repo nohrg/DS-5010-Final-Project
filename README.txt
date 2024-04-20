@@ -17,8 +17,8 @@ A CSV file, each row is an individual student's record from a single season. Stu
 Columns:
   - Person ID: unique ID numbers for each student
   - Gender code: M, F, N
-  - Race/ethnicity: self-reported. A value of 0 indicates that no race/ethnicity data was provided by the student
-  - FA: student's financial aid status. A value of 0 indicates no financial aid, a value of 1 indicates some financial aid, and a value of 2 indicates 90%+ financial aid.
+  - Race/ethnicity: A value of 0 indicates that no race/ethnicity data was provided by the student
+  - FA: student's financial aid status. A value of 0 indicates no financial aid, a value of 1 indicates some financial aid, and a value of 2 indicates near-full financial aid.
   - Acad Yr (start): academic year that the record is for
   - Code: bucket category for the program the student is enrolled in (e.g. "S" for "sports", "A" for "arts")
   - Program (name): name of the program the student is enrolled in
@@ -32,3 +32,4 @@ Columns:
 Running the Module:
   - Place the enrollment data CSV in the "aft_module" folder and rename the enrollment_data variable in aft_pkg/aft_data_org.py as needed
   - Run the aft_dashboard.py module and launch http://localhost:8050 in your webbrowser
+  - To close the module, type Ctrl+C in the command line/terminal.
