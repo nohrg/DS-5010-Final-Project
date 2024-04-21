@@ -4,6 +4,8 @@
 
 An interactive data visualization dashboard designed to enable stakeholders at an educational institution to better understand and analyze enrollment trends and correlations in their afternoon programs. Each of the visualizations is customizable with multidimensional filtering to highlight demographic information.
 
+Video demonstration: https://drive.google.com/file/d/1jEoO03J96k0rcBbq5rjqk3iommq9KXV9/view?usp=drive_link
+
 
 Data Visualizations:
   - Total enrollment by program histogram
